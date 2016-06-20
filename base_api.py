@@ -2,6 +2,8 @@ import unittest
 import requests
 import xmltodict
 from yaml import load
+import lxml
+from lxml import etree
 
 
 class BaseApi(unittest.TestCase):
@@ -10,6 +12,7 @@ class BaseApi(unittest.TestCase):
         self.settings = load(open('conf.yaml').read())
         self.base_url = self.settings['base_url']
         self.cookies = self._login()
+        self.content_type = self.settings['content-type']
 
     def _login(self):
         url = self.base_url + '/user/login'
@@ -40,7 +43,9 @@ class BaseApi(unittest.TestCase):
     def request(self, url, method, params=None):
         # method in ('get', 'post', 'put', 'delete')
 
-        return getattr(requests, method)(url, data=params, cookies=self.cookies)
+        request = getattr(requests, method)(url, data=params, cookies=self.cookies)
+        self.log_full(request)
+        return request
 
     def _get_accessible_projects(self):
         url = self.base_url + '/project/all'
@@ -49,10 +54,7 @@ class BaseApi(unittest.TestCase):
 
         response_dict = xmltodict.parse(r.text)
 
-        projects_list = []
-
-        for x in response_dict['projects']['project']:
-            projects_list.append(x['@shortName'])
+        projects_list = [p['@shortName'] for p in response_dict['projects']['project']]
 
         return projects_list
 
@@ -100,8 +102,58 @@ class BaseApi(unittest.TestCase):
 
     # Assertion functions
 
-    def assert_basic(self, r, code=None, content_type=None):
+    def assert_for_status_code_and_content_type(self, r, code=None, content_type=None):
         if code:
             self.assertEquals(r.status_code, code)
+        try:
+            self.validate_content_type(r, content_type)
+        except KeyError:
+            print "Couldn't find Content-type header in response"
+
+    def validate_content_type(self, r, content_type=None):
         if content_type:
             self.assertEquals(r.headers['Content-Type'], content_type)
+        else:
+            self.assertEqual(r.headers['Content-Type'], self.content_type)
+
+    def validate_xml(self, r, schema_file):
+        try:
+            # Get the XML schema to validate against
+            schema = lxml.etree.XMLSchema(file=schema_file)
+            # Parse XML
+            xml_doc = lxml.etree.XML(r.content)
+            # Validate parsed XML against schema returning a readable message on failure
+            schema.assertValid(xml_doc)
+            # Validate parsed XML against schema returning boolean value indicating success/failure
+            print 'schema.validate() returns "%s".' % schema.validate(xml_doc)
+
+        except lxml.etree.XMLSchemaParseError, xspe:
+            # Something wrong with the schema (getting from URL/parsing)
+            print "XMLSchemaParseError occurred!"
+            print xspe
+
+        except lxml.etree.XMLSyntaxError, xse:
+            # XML not well formed
+            print "XMLSyntaxError occurred!"
+            print xse
+
+        except lxml.etree.DocumentInvalid, di:
+            # XML failed to validate against schema
+            print "DocumentInvalid occurred!"
+
+            # error = schema.error_log.last_error
+            number_of_errors = len(schema.error_log)
+            # print number_of_errors
+            if number_of_errors > 0:
+                for error in schema.error_log:
+                    # All the error properties (from libxml2) describing what went wrong
+                    print 'domain_name: ' + error.domain_name
+                    print 'domain: ' + str(error.domain)
+                    print 'filename: ' + error.filename  # '<string>' cos var is a string of xml
+                    print 'level: ' + str(error.level)
+                    print 'level_name: ' + error.level_name  # an integer
+                    print 'line: ' + str(error.line)  # a unicode string that identifies the line where the error occurred.
+                    print 'message: ' + error.message  # a unicode string that lists the message.
+                    print 'type: ' + str(error.type)  # an integer
+                    print 'type_name: ' + error.type_name
+            assert False, "Test failed due to XSD validation error" # otherwise test is marked as passed even when schema failed validation

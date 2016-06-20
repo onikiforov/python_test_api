@@ -17,11 +17,10 @@ class TestGetIssuesInProject(BaseApi):
             'max': '10'
         }
 
-        # r = self.request(url, 'get')
-        r = requests.get(url, params, cookies=self._login())  # find a different approach to get cookies
+        r = requests.get(url, params, cookies=self.cookies)
         self.log_full(r)
 
-        self.assert_basic(r, 200, 'application/xml;charset=UTF-8')
+        self.assert_for_status_code_and_content_type(r, 200)
 
         response_dict = xmltodict.parse(r.text)
 
@@ -34,6 +33,8 @@ class TestGetIssuesInProject(BaseApi):
                 self.assertTrue(y['@name'])
                 self.assertTrue(y['value'])
 
+        # self.validate_xml(r, 'xsd/issues.xsd')
+
     def test_get_issues_in_not_existing_project(self):
         url = self.base_url + '/issue/byproject/' + 'kjhfjkafsasf'
 
@@ -44,7 +45,7 @@ class TestGetIssuesInProject(BaseApi):
         r = requests.get(url, params, cookies=self._login())
         self.log_full(r)
 
-        self.assert_basic(r, 404, 'application/xml;charset=UTF-8')
+        self.assert_for_status_code_and_content_type(r, 404)
 
         response_dict = xmltodict.parse(r.text)
         self.assertTrue(response_dict['error'])
@@ -63,7 +64,7 @@ class TestGetIssuesInProject(BaseApi):
         r = requests.get(url, params)
         self.log_full(r)
 
-        self.assert_basic(r, 401, 'application/xml;charset=UTF-8')
+        self.assert_for_status_code_and_content_type(r, 401)
 
         response_dict = xmltodict.parse(r.text)
 

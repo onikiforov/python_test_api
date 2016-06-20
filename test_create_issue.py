@@ -26,10 +26,9 @@ class TestCreateIssue(BaseApi):
 
         # r = requests.put(url, data=params, cookies=self.cookies)
         r = self.request(url, 'put', params)
-        self.log_full(r)
 
         # self.assertEquals(r.status_code, 202)
-        self.assert_basic(r, 201)
+        self.assert_for_status_code_and_content_type(r, 201)
         self.assertTrue(r.headers['Location'])
         # print "Location response header is: " + r.headers['Location']
 

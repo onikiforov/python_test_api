@@ -15,11 +15,10 @@ class TestGetListOfIssues(BaseApi):
         }
 
         r = self.request(url, 'get', params)
-        self.log_full(r)
 
         response_dict = xmltodict.parse(r.text)
 
-        self.assert_basic(r, 200, 'application/xml;charset=UTF-8')
+        self.assert_for_status_code_and_content_type(r, 200)
         for x in response_dict['issueCompacts']['issue']:
             self.assertTrue(x['@id'])
 
@@ -33,9 +32,8 @@ class TestGetListOfIssues(BaseApi):
         }
 
         r = requests.get(url, params)
-        self.log_full(r)
 
-        self.assert_basic(r, 401, 'application/xml;charset=UTF-8')
+        self.assert_for_status_code_and_content_type(r, 401)
 
         response_dict = xmltodict.parse(r.text)
 

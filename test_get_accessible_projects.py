@@ -9,9 +9,8 @@ class TestGetAccessibleProjects(BaseApi):
         url = self.base_url + '/project/all'
 
         r = self.request(url, 'get')
-        self.log_full(r)
 
-        self.assert_basic(r, 200, 'application/xml;charset=UTF-8')
+        self.assert_for_status_code_and_content_type(r, 200)
 
         response_dict = xmltodict.parse(r.text)
 
@@ -23,9 +22,8 @@ class TestGetAccessibleProjects(BaseApi):
         url = self.base_url + '/project/all'
 
         r = requests.get(url)
-        self.log_full(r)
 
-        self.assert_basic(r, 401, 'application/xml;charset=UTF-8')
+        self.assert_for_status_code_and_content_type(r, 401)
 
         response_dict = xmltodict.parse(r.text)
 

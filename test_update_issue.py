@@ -22,17 +22,15 @@ class TestUpdateIssue(BaseApi):
         }
 
         r = self.request(url, 'post', params)
-        self.log_full(r)
 
-        self.assert_basic(r, 200, 'text/plain;charset=UTF-8')
+        self.assert_for_status_code_and_content_type(r, 200, 'text/plain;charset=UTF-8')
 
         url = self.base_url + '/issue/' + issue_id
         r = self.request(url, 'get')
-        self.log_full(r)
 
         response_dict = xmltodict.parse(r.text)
 
-        self.assert_basic(r, 200, 'application/xml;charset=UTF-8')
+        self.assert_for_status_code_and_content_type(r, 200)
 
         self.assertEqual(response_dict['issue']['@id'], issue_id)
         for field in response_dict['issue']['field']:
@@ -55,11 +53,10 @@ class TestUpdateIssue(BaseApi):
         }
 
         r = self.request(url, 'post', params)
-        self.log_full(r)
 
         response_dict = xmltodict.parse(r.text)
 
-        self.assert_basic(r, 404, 'application/xml;charset=UTF-8')
+        self.assert_for_status_code_and_content_type(r, 404)
         self.assertTrue(response_dict['error'])
 
     def test_update_issue_without_credentials(self):
@@ -77,9 +74,8 @@ class TestUpdateIssue(BaseApi):
         }
 
         r = requests.post(url, params)
-        self.log_full(r)
 
-        self.assert_basic(r, 401, 'application/xml;charset=UTF-8')
+        self.assert_for_status_code_and_content_type(r, 401)
 
         response_dict = xmltodict.parse(r.text)
 
